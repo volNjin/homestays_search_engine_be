@@ -1,16 +1,68 @@
 import mongoose from "mongoose";
+const commentSchma = new mongoose.Schema({
+  score: {
+    type: String,
+    required: true,
+  },
+  scoreText: {
+    type: String,
+    required: true,
+  },
+  reviewer_name: {
+    type: String,
+    required: true,
+  },
+  reviewer_country: {
+    type: String,
+    required: true,
+  },
+  room_type: {
+    type: String,
+    required: true,
+  },
+  stay_detail: {
+    type: String,
+    required: true,
+  },
+  comment_title: {
+    type: String,
+    required: true,
+  },
+  comment_text: {
+    type: String,
+    required: true,
+  },
+  review_date: {
+    type: String,
+    required: true,
+  },
+})
+const featureSchma = new mongoose.Schema({
+  img: {
+    type: String,
+  },
+  content: {
+    type: String,
+  }
+})
 const HotelSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
   },
-  province: {
+  city: {
     type: String,
     required: true,
   },
   address: {
-    type: String,
-    required: true,
+    vn: {
+      type: String,
+      required: true,
+    },
+    en: {
+      type: String,
+      required: true,
+    },
   },
   cheapest_price: {
     type: String,
@@ -43,7 +95,10 @@ const HotelSchema = new mongoose.Schema({
     type: [String],
   },
   top_features: {
-    type: [String],
+    type: [featureSchma],
+  },
+  comments: {
+    type: [commentSchma],
   },
 });
 

@@ -13,9 +13,14 @@ export const getHotel = async (req, res, next) => {
 }
 
 export const getHotels = async (req, res, next) => {
-    const { province, adult, child, room, min, max, ...others } = req.query;
+    const { city, adult, child, room, min, max, ...others } = req.query;
     try {
-        const hotels = await Hotel.find({ province: province }).limit(req.query.limit);
+        const hotels = await Hotel.find({
+            $or: [
+                { 'city.vn': city },
+                { 'city.en': city }
+            ]
+        }).limit(req.query.limit);
         const list = await Promise.all(
             hotels.map(async (hotel) => {
                 const hotelRooms = await Room.find({ home_name: hotel.name });
@@ -41,17 +46,17 @@ export const getHotels = async (req, res, next) => {
             );
         }
 
-        if (req.query.highlight) {
+        if (req.query.facility) {
             filteredList = await Promise.all(
                 filteredList.map(async (hotel) => {
                     const hotelRooms = await Room.find({ home_name: hotel.name }).lean().exec(); // Use exec() to get a regular array
-                    const highlightsToCheck = Array.isArray(req.query.highlight) ? req.query.highlight : [req.query.highlight];
+                    const facilitiesToCheck = Array.isArray(req.query.facility) ? req.query.facility : [req.query.facility];
 
                     if (hotelRooms.some((room) => {
-                        return room.highlights.some((highlight) => {
-                            const highlightText = highlight.toLowerCase();
-                            return highlightsToCheck.some((highlight) => highlightText.includes(highlight.toLowerCase()));
-                        });
+                        return facilitiesToCheck.every((facility) => {
+                            const facilityText = facility.toLowerCase();
+                            return room.facilities.some((facility) => facility.toLowerCase().includes(facilityText));
+                        })
                     })) {
                         return hotel;
                     }
@@ -65,11 +70,16 @@ export const getHotels = async (req, res, next) => {
 }
 
 
-export const countByProvince = async (req, res, next) => {
-    const provinces = req.query.provinces.split(',');
+export const countByCity = async (req, res, next) => {
+    const cities = req.query.cities.split(',');
     try {
-        const list = await Promise.all(provinces.map(province => {
-            return Hotel.countDocuments({ province: province })
+        const list = await Promise.all(cities.map(city => {
+            return Hotel.countDocuments({
+                $or: [
+                    { 'city.vn': city },
+                    { 'city.en': city }
+                ]
+            })
         }))
         res.status(200).json(list);
     } catch (error) {

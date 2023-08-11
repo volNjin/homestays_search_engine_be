@@ -24,7 +24,7 @@ const RoomSchema = new mongoose.Schema(
     photos: {
       type: [String],
     },
-    highlights: {
+    facilities: {
       type: [String],
     },
   },
