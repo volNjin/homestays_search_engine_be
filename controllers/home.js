@@ -1,47 +1,49 @@
-import Home from "../models/Home.js";
+import homeService from "../services/homeService.js";
 
-export const getHome = async (req, res, next) => {
+export const getHomeById = async (req, res, next) => {
   try {
-    const home = await Home.findById(req.params.id);
+    const home = await homeService.getHomeById(req.params.id);
     res.status(200).json(home);
   } catch (error) {
     next(error);
   }
 };
-const countOccupancy = (rooms) => {
-  const totalOccupancy = rooms.reduce((acc, room) => {
-    if (room.availables && room.availables.length > 0) {
-      const roomOccupancy = room.availables.reduce(
-        (roomAcc, available) => roomAcc + parseInt(available.occupancy || 0),
-        0
-      );
-      return acc + roomOccupancy;
+export const getHomeByName = async (req, res) => {
+  try {
+    const home = await homeService.getHomeByName(req.params.homename);
+    res.status(200).json(home);
+  } catch (error) {
+    next(error);
+  }
+};
+const isEnoughOccupancy = (rooms, neededOccupancy) => {
+  const totalOccupancy = { agoda: 0, booking: 0, traveloka: 0 };
+
+  rooms.forEach((room) => {
+    for (const [platform, availabilities] of Object.entries(room.availables)) {
+      if (availabilities) {
+        availabilities.forEach((availability) => {
+          totalOccupancy[platform] += availability.occupancy;
+        });
+      }
     }
-    return acc;
-  }, 0);
-  return totalOccupancy;
+  });
+  return Object.values(totalOccupancy).some(
+    (occupancy) => occupancy >= neededOccupancy
+  );
 };
 export const getHomes = async (req, res, next) => {
   const { city, adult, child, room, min, max, ...others } = req.query;
+  console.log(req.query);
   try {
-    const homes = await Home.find({
-      $or: [{ "city.vn": city }, { "city.en": city }],
-    }).limit(req.query.limit);
+    const homes = await homeService.findHomesByCity(city);
+    console.log(homes);
     let filteredList = await Promise.all(
       homes.map(async (home) => {
         const homeRooms = home.rooms;
-        const agodaRooms = homeRooms.agoda;
-        const bookingRooms = homeRooms.booking;
-        const travelokaRooms = homeRooms.traveloka;
-
         if (
-          (agodaRooms.length >= parseInt(room) &&
-            countOccupancy(agodaRooms) >= parseInt(adult) + parseInt(child)) ||
-          (bookingRooms.length >= parseInt(room) &&
-            countOccupancy(bookingRooms) >=
-              parseInt(adult) + parseInt(child)) ||
-          (travelokaRooms.length >= parseInt(room) &&
-            countOccupancy(travelokaRooms) >= parseInt(adult) + parseInt(child))
+          homeRooms.length >= parseInt(room) &&
+          isEnoughOccupancy(homeRooms, parseInt(adult) + parseInt(child))
         ) {
           return home;
         }
@@ -97,27 +99,8 @@ export const getHomes = async (req, res, next) => {
               ? req.query.facility
               : [req.query.facility];
             const homeRooms = home.rooms;
-            const agodaRooms = homeRooms.agoda;
-            const bookingRooms = homeRooms.booking;
-            const travelokaRooms = homeRooms.traveloka;
             if (
-              agodaRooms.some((room) => {
-                return facilitiesToCheck.every((facility) => {
-                  const facilityText = facility.toLowerCase();
-                  return room.facilities.some((facility) =>
-                    facility.toLowerCase().includes(facilityText)
-                  );
-                });
-              }) ||
-              bookingRooms.some((room) => {
-                return facilitiesToCheck.every((facility) => {
-                  const facilityText = facility.toLowerCase();
-                  return room.facilities.some((facility) =>
-                    facility.toLowerCase().includes(facilityText)
-                  );
-                });
-              }) ||
-              travelokaRooms.some((room) => {
+              homeRooms.some((room) => {
                 return facilitiesToCheck.every((facility) => {
                   const facilityText = facility.toLowerCase();
                   return room.facilities.some((facility) =>
@@ -142,13 +125,7 @@ export const getHomes = async (req, res, next) => {
 export const countByCity = async (req, res, next) => {
   const cities = req.query.cities.split(",");
   try {
-    const list = await Promise.all(
-      cities.map((city) => {
-        return Home.countDocuments({
-          $or: [{ "city.vn": city }, { "city.en": city }],
-        });
-      })
-    );
+    const list = await homeService.countHomesByCities(cities);
     res.status(200).json(list);
   } catch (error) {
     next(error);

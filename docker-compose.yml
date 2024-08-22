@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8800:8800"
+    environment:
+      MONGO_URL: mongodb://host.docker.internal:27017/combined_db
+    depends_on:
+      - mongo
+    networks:
+      - backend-network
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend-network
+
+volumes:
+  mongo-data:
+
+networks:
+  backend-network:
+    driver: bridge

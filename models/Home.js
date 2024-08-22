@@ -4,12 +4,26 @@ const RoomSchema = new mongoose.Schema({
   roomtype: String,
   photos: [String],
   facilities: [String],
-  availables: [
-    {
-      occupancy: Number,
-      price: String,
-    },
-  ],
+  availables: {
+    agoda: [
+      {
+        occupancy: Number,
+        price: String,
+      },
+    ],
+    booking: [
+      {
+        occupancy: Number,
+        price: String,
+      },
+    ],
+    traveloka: [
+      {
+        occupancy: Number,
+        price: String,
+      },
+    ],
+  },
 });
 const ReviewSchema = new mongoose.Schema({
   homename: {
@@ -17,10 +31,6 @@ const ReviewSchema = new mongoose.Schema({
     required: true,
   },
   user_name: {
-    type: String,
-    required: true,
-  },
-  user_country: {
     type: String,
     required: true,
   },
@@ -88,11 +98,12 @@ const HomeSchema = new mongoose.Schema({
   property_highlights: {
     type: [String],
   },
-  rooms: {
-    agoda: [RoomSchema],
-    booking: [RoomSchema],
-    traveloka: [RoomSchema],
+  urls: {
+    agoda: String,
+    booking: String,
+    traveloka: String,
   },
+  rooms: [RoomSchema],
   reviews: {
     agoda: [ReviewSchema],
     booking: [ReviewSchema],
